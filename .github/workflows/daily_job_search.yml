@@ -1,0 +1,42 @@
+name: Daily Arts Job Search
+
+on:
+  schedule:
+    # Runs every day at 8:00 AM UTC (adjust to your timezone)
+    # Use https://crontab.guru to pick your preferred time
+    - cron: "0 8 * * *"
+
+  # Also lets you run it manually from the GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  search-jobs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      # Cache the seen_jobs.json file between runs so we don't resend old listings
+      - name: Restore seen jobs cache
+        uses: actions/cache@v4
+        with:
+          path: seen_jobs.json
+          key: seen-jobs-${{ github.run_id }}
+          restore-keys: |
+            seen-jobs-
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run job search bot
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+          SERPAPI_KEY:        ${{ secrets.SERPAPI_KEY }}
+        run: python job_scraper.py
